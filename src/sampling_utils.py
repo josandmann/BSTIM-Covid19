@@ -241,7 +241,7 @@ def sample_ia_effects(data, days, counties, ia_bfs, num_features, num_tps=10):
                 x_data = x_data_all[j * n_total:(j + 1) * n_total]
             else:
                 t_data = []
-                x_data = []
+                x_data = np.empty((0,2)) # needs shape for theano.
 
             offset = (i * n_counties + j) * num_tps
             t_pred = t_pred_all[offset:offset + num_tps]
@@ -335,7 +335,7 @@ def build_ia_bfs(temporal_bfs, spatial_bfs):
     # (x1,t1) are the to-be-predicted points, (x2,t2) the historic cases
 
     # spatial distance btw. each points in x1 and x2 with gramian M
-    dx = tt.sqrt( (x1.dot(M) * x1).sum(axis=1).reshape((-1, 1)) + \
+    dx = tt.sqrt((x1.dot(M) * x1).sum(axis=1).reshape((-1, 1)) + \
          (x2.dot(M) * x2).sum(axis=1).reshape((1, -1)) - \
          2 * x1.dot(M).dot(x2.T)) 
 
