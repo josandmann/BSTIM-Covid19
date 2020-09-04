@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('TkAgg')
 from config import *
 from plot_utils import *
 from shared_utils import *
@@ -7,7 +9,8 @@ from collections import OrderedDict
 from matplotlib import pyplot as plt
 from pymc3.stats import quantiles
 
-def curves(save_plot=False):
+# def curves(use_interactions=True, use_report_delay=True, prediction_day=30, save_plot=False):
+def curves(model_i=0, prediction_day=30, save_plot=False):
 
     with open('../data/counties/counties.pkl', "rb") as f:
         counties = pkl.load(f)
@@ -15,15 +18,13 @@ def curves(save_plot=False):
     # with open('../data/comparison.pkl', "rb") as f:
     #     best_model = pkl.load(f)
 
-    # update to day an new limits!
-    prediction_day = 30
+    # update to day and new limits!
     xlim = (5.5, 15.5)
     ylim = (47, 56) # <- 10 weeks
 
     countyByName = OrderedDict(
-        [('Dortmund', '05913'), ('Leipzig', '14713'), ('Nürnberg', '09564'), ('München', '09162')])
-    plot_county_names = {"covid19": ["Dortmund", "Leipzig"], "rotavirus": [
-        "Dortmund", "Leipzig"], "borreliosis": ["Nürnberg", "München"]}
+        [('Düsseldorf', '05111'), ('Leipzig', '14713'), ('Nürnberg', '09564'), ('München', '09162')])
+    plot_county_names = {"covid19": ["Düsseldorf", "Leipzig"]}
 
     # colors for curves
     C1 = "#D55E00"
@@ -36,7 +37,7 @@ def curves(save_plot=False):
     fig = plt.figure(figsize=(12, 14))
     grid = plt.GridSpec(
         3,
-        len(diseases),
+        1,
         top=0.9,
         bottom=0.1,
         left=0.07,
@@ -51,34 +52,38 @@ def curves(save_plot=False):
     # for i, disease in enumerate(diseases):
     i = 0
     disease = "covid19"
-    use_age = True
-    use_eastwest = True
     prediction_region = "germany"
-    # Load data
-    # use_age = best_model[disease]["use_age"]
-    # use_eastwest = best_model[disease]["use_eastwest"]
-    # if disease == "borreliosis":
-    #     prediction_region = "bavaria"
-    #     use_eastwest = False
-    # else:
-    #     prediction_region = "germany"
 
     data = load_daily_data(disease, prediction_region, counties)
-    data = data[data.index < pd.Timestamp(2020, 3, 30)]
-    # if disease == "borreliosis":
-    #       data = data[data.index >= parse_yearweek("2013-KW1")]
+
+    start_day = pd.Timestamp('2020-03-01')
+    i_start_day = (start_day - data.index.min()).days
+    day_0 = pd.Timestamp('2020-05-21')
+    day_m5 = day_0 - pd.Timedelta(days=5)
+    day_p5 = day_0 + pd.Timedelta(days=5)
+
     _, target, _, _ = split_data(
-        data, train_start=pd.Timestamp(
-            2020, 1, 28), test_start=pd.Timestamp(
-            2020, 3, 30), post_test=pd.Timestamp(
-            2020, 3, 31)) # plots for the training period!
-    # _, _, _, target = split_data(data)
+        data,
+        train_start=start_day,
+        test_start=day_0,
+        post_test=day_p5)
+
     county_ids = target.columns
 
-    res = load_pred(disease, use_age, use_eastwest)
-    n_days = 62 # for now; get from timestamps up top!
+    # Load our prediction samples
+    res = load_final_pred()
+    #res_test = load_pred_by_i(disease, model_i)
+   # print(res_train['y'].shape)
+    #print(res_test['y'].shape)
+    n_days = (day_p5 - start_day).days
+    #print(res['y'].shape)
+    prediction_samples = np.reshape(res['y'], (res['y'].shape[0], -1, 412)) 
+    #print(prediction_samples.shape)
+    #print(target.index)
+    prediction_samples = prediction_samples[:,i_start_day:i_start_day+n_days,:]
+    ext_index = pd.DatetimeIndex([d for d in target.index] + \
+            [d for d in pd.date_range(target.index[-1]+timedelta(1),day_p5-timedelta(1))])
 
-    prediction_samples = np.reshape(res['y'], (res['y'].shape[0], n_days, -1)) 
     # TODO: figure out where quantiles comes from and if its pymc3, how to replace it
     prediction_quantiles = quantiles(prediction_samples, (5, 25, 75, 95)) 
 
@@ -86,45 +91,38 @@ def curves(save_plot=False):
         data=np.mean(
             prediction_samples,
             axis=0),
-        index=target.index,
+        index=ext_index,
         columns=target.columns)
     prediction_q25 = pd.DataFrame(
         data=prediction_quantiles[25],
-        index=target.index,
+        index=ext_index,
         columns=target.columns)
     prediction_q75 = pd.DataFrame(
         data=prediction_quantiles[75],
-        index=target.index,
+        index=ext_index,
         columns=target.columns)
     prediction_q5 = pd.DataFrame(
         data=prediction_quantiles[5],
-        index=target.index,
+        index=ext_index,
         columns=target.columns)
     prediction_q95 = pd.DataFrame(
         data=prediction_quantiles[95],
-        index=target.index,
+        index=ext_index,
         columns=target.columns)
 
-    # Load hhh4 predictions for reference
-    # hhh4_predictions = pd.read_csv("../data/diseases/{}_hhh4.csv".format(
-    #     "borreliosis_notrend" if disease == "borreliosis" else disease))
-    # weeks = hhh4_predictions.pop("weeks")
-    # hhh4_predictions.index = parse_yearweek(weeks)
-
-    # create axes grid
     map_ax = fig.add_subplot(grid[2, i])
     map_ax.set_position(grid[2, i].get_position(fig).translated(0, -0.05))
     map_ax.set_xlabel(
-        "{}/{}/{}".format(
-            prediction_mean.index[prediction_day].year,
-            prediction_mean.index[prediction_day].month,
-            prediction_mean.index[prediction_day].day),
+        "{}.{}.{}".format(
+            prediction_mean.index[-5].day,
+            prediction_mean.index[-5].month,
+            prediction_mean.index[-5].year),
         fontsize=22)
 
     # plot the chloropleth map
     plot_counties(map_ax,
                 counties,
-                prediction_mean.iloc[prediction_day].to_dict(),
+                prediction_mean.iloc[-10].to_dict(),
                 edgecolors=dict(zip(map(countyByName.get,
                                         plot_county_names[disease]),
                                     ["red"] * len(plot_county_names[disease]))),
@@ -147,7 +145,9 @@ def curves(save_plot=False):
 
         county_id = countyByName[name]
     #     dates = [n.wednesday() for n in target.index.values]
-        dates = target.index.values
+        dates = [pd.Timestamp(day) for day in ext_index]
+        days = [ (day - min(dates)).days for day in dates]
+
 
         # plot our predictions w/ quartiles
         p_pred = ax.plot_date(
@@ -179,28 +179,27 @@ def curves(save_plot=False):
             linewidth=2.0,
             zorder=3)
 
-        # plot hhh4 reference prediction
-    #     p_hhh4 = ax.plot_date(
-    #         dates,
-    #         hhh4_predictions[county_id],
-    #         "-",
-    #         color=C3,
-    #         linewidth=2.0,
-    #         zorder=3)
 
         # plot ground truth
-        p_real = ax.plot_date(dates, target[county_id], "k.")
+        p_real = ax.plot_date(dates[:-5], target[county_id], "k.")
 
         # plot 30week marker
-        ax.axvline(dates[30], lw=2)
+        ax.axvline(dates[-5],ls='-', lw=2, c='cornflowerblue')
+        ax.axvline(dates[-10],ls='--', lw=2, c='cornflowerblue')
 
-        ax.set_title(["campylobacteriosis" if disease == "campylobacter" else disease]
-                    [0] + "\n" + name if j == 0 else name, fontsize=22)
+        #ax.set_title(["campylobacteriosis" if disease == "campylobacter" else disease]
+        #            [0] + "\n" + name if j == 0 else name, fontsize=22)
         if j == 1:
-            ax.set_xlabel("Time [calendar weeks]", fontsize=22)
+            ax.set_xlabel("Time", fontsize=20)
         ax.tick_params(axis="both", direction='out',
-                    size=6, labelsize=16, length=6)
+                    size=6, labelsize=16, length=6
+                    )
+        ticks = ['2020-03-02','2020-03-12','2020-03-22','2020-04-01','2020-04-11','2020-04-21','2020-05-1','2020-05-11','2020-05-21']
+        labels = ['02.03.2020','12.03.2020','22.03.2020','01.04.2020','11.04.2020','21.04.2020','01.05.2020','11.05.2020','21.05.2020']
+        plt.xticks(ticks,labels)
+        #plt.xlabel(ticks)
         plt.setp(ax.get_xticklabels(), visible=j > 0, rotation=45)
+        
 
         cent = np.array(counties[county_id]["shape"].centroid.coords[0])
         txt = map_ax.annotate(
@@ -218,7 +217,7 @@ def curves(save_plot=False):
         txt.set_path_effects(
             [PathEffects.withStroke(linewidth=2, foreground='black')])
 
-        # ax.set_ylim([0,target[county_id].max()+5])
+        ax.set_xlim([start_day,day_p5-pd.Timedelta(1)])
         ax.autoscale(False)
         p_quant2 = ax.fill_between(
             dates,
@@ -239,7 +238,7 @@ def curves(save_plot=False):
                     fontsize=12, loc="upper right")
         fig.text(0,
                 1 + 0.025,
-                r"$\textbf{" + str(i + 1) + "ABC"[j] + r"}$",
+                r"$\textbf{" + str(i + 1) + "ABC"[j] + " " + plot_county_names["covid19"][j]+ r"}$",
                 fontsize=22,
                 transform=ax.transAxes)
     fig.text(0, 0.95, r"$\textbf{" + str(i + 1) + r"C}$",
@@ -249,6 +248,13 @@ def curves(save_plot=False):
             va='center', rotation='vertical', fontsize=22)
 
     if save_plot:
-        plt.savefig("../figures/curves.pdf")
+        plt.savefig("../figures/curves_{}.pdf".format(model_i))
 
-    return plt
+    plt.close()
+    return fig
+
+
+#if __name__ == "__main__": 
+
+    #_ = curves(15 ,save_plot=True)
+

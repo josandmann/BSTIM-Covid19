@@ -1,9 +1,21 @@
 import itertools as it
 
-diseases = ["covid19"]
-prediction_regions = ["germany"]
+""" setup for model selection experiment """
 
-# combinations_age_eastwest = [(False,False),(False,True),(True,True)]
-combinations_age_eastwest = [(True, True)]
-combinations = list(it.product(
-    range(len(combinations_age_eastwest)), diseases))
+# diseases = ["covid19"]
+# prediction_regions = ["germany"]
+
+opt_ia = [True, False]
+opt_report_delay = [True, False]
+opt_demographics = [True,False]
+opt_trend_order = [1,2,3,4]
+opt_periodic_order = [1,2,3,4]
+
+combinations = list(it.product(opt_ia,
+                               opt_report_delay,
+                               opt_demographics,
+                               opt_trend_order,
+                               opt_periodic_order))
+
+
+

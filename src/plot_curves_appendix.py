@@ -1,4 +1,7 @@
+import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
+from datetime import timedelta
 from config import *
 from shared_utils import *
 from plot_utils import *
@@ -7,7 +10,8 @@ import numpy as np
 from collections import OrderedDict
 from pymc3.stats import quantiles
 
-def curves_appendix(save_plot=False):
+def curves_appendix(model_i=15, save_plot=False):
+
     with open('../data/counties/counties.pkl', "rb") as f:
         counties = pkl.load(f)
 
@@ -75,51 +79,72 @@ def curves_appendix(save_plot=False):
     C2 = "#E69F00"
     C3 = "#0073CF"
 
-    # for i, disease in enumerate(diseases): ! Replace with new configs!
     i = 0
     disease = "covid19"
-    use_age = True
-    use_eastwest = True
     prediction_region = "germany"
 
     data = load_daily_data(disease, prediction_region, counties)
-    data = data[data.index < pd.Timestamp(2020, 3, 30)]
+
+
+    start_day = pd.Timestamp('2020-03-01')
+    i_start_day = (start_day - data.index.min()).days
+    day_0 = pd.Timestamp('2020-05-21')
+    day_m5 = day_0 - pd.Timedelta(days=5)
+    day_p5 = day_0 + pd.Timedelta(days=5)
 
     _, target, _, _ = split_data(
-        data, train_start=pd.Timestamp(
-            2020, 1, 28), test_start=pd.Timestamp(
-            2020, 3, 30), post_test=pd.Timestamp(
-            2020, 3, 31)) # plots for the training period!
+        data,
+        train_start=start_day,
+        test_start=day_0,
+        post_test=day_p5)
+
+ 
+
     county_ids = target.columns
 
-        # Load our prediction samples
-    res = load_pred(disease, use_age, use_eastwest)
-    n_days = 62 # for now; get from timestamps up top! / configs!
+    # Load our prediction samples
 
-    prediction_samples = np.reshape(res['y'], (res['y'].shape[0], n_days, -1)) 
+    res = load_final_pred()
+    n_days = (day_p5 - start_day).days
+    
+    prediction_samples = np.reshape(res['y'], (res['y'].shape[0], -1, 412)) 
+    
+
+
+    prediction_samples = prediction_samples[:,i_start_day:i_start_day+n_days,:]
     prediction_quantiles = quantiles(prediction_samples, (5, 25, 75, 95))
+    ext_index = pd.DatetimeIndex([d for d in target.index] + \
+            [d for d in pd.date_range(target.index[-1]+timedelta(1),day_p5-timedelta(1))])
+   #print(ext_index)
+   # print(prediction_samples.shape)
+ 
 
     prediction_mean = pd.DataFrame(
         data=np.mean(
             prediction_samples,
             axis=0),
-        index=target.index,
+        index=ext_index,
+        #index=target.index,
         columns=target.columns)
     prediction_q25 = pd.DataFrame(
         data=prediction_quantiles[25],
-        index=target.index,
+        index=ext_index,
+        #index=target.index,
         columns=target.columns)
     prediction_q75 = pd.DataFrame(
         data=prediction_quantiles[75],
-        index=target.index,
+        index=ext_index,
+        #index=target.index,
         columns=target.columns)
     prediction_q5 = pd.DataFrame(
         data=prediction_quantiles[5],
-        index=target.index,
+        index=ext_index,
+        #index=target.index,
         columns=target.columns)
     prediction_q95 = pd.DataFrame(
         data=prediction_quantiles[95],
-        index=target.index,
+        index=ext_index,
+        #index=target.index,
         columns=target.columns)
 
     fig = plt.figure(figsize=(12, 12))
@@ -133,47 +158,54 @@ def curves_appendix(save_plot=False):
             grid[np.unravel_index(list(range(25))[j], (5, 5))])
 
         county_id = countyByName[name]
-        dates = [pd.Timestamp(day) for day in target.index.values]
-        days = [ (day - min(dates)).days for day in dates]
+
+        dates = [pd.Timestamp(day) for day in ext_index]
+        days = [ (day - min(dates)).days + 1 for day in dates]
+
 
         # plot our predictions w/ quartiles
         p_pred = ax.plot(
-            days,
+            dates,
             prediction_mean[county_id],
             "-",
             color=C1,
             linewidth=2.0,
             zorder=4)
         p_quant = ax.fill_between(
-            days,
+            dates,
             prediction_q25[county_id],
             prediction_q75[county_id],
             facecolor=C2,
             alpha=0.5,
             zorder=1)
         ax.plot(
-            days,
+            dates,
             prediction_q25[county_id],
             ":",
             color=C2,
             linewidth=2.0,
             zorder=3)
         ax.plot(
-            days,
+            dates,
             prediction_q75[county_id],
             ":",
             color=C2,
             linewidth=2.0,
             zorder=3)
 
-        # plot ground truth
-        p_real = ax.plot(days, target[county_id], "k.")
+
+        p_real = ax.plot(dates[:-5], target[county_id], "k.")
+
 
         ax.set_title(name, fontsize=18)
-        ax.set_xticks(days[::5])
+        #days = [i+1 for i in range(len(dates))]
+        #ax.set_xticks(days[::5])
+        ticks = ['2020-03-01','2020-03-12','2020-03-22','2020-04-01','2020-04-11','2020-04-21','2020-05-1','2020-05-11','2020-05-21']
+        labels = ['0','10','20','30','40','50','60','70','80',]
+        plt.xticks(ticks,labels)
         ax.tick_params(axis="both", direction='out', size=2, labelsize=14)
         plt.setp(ax.get_xticklabels(), visible=False)
-        if j >= 19:
+        if j > 19:
             plt.setp(ax.get_xticklabels(), rotation=60)
             plt.setp(ax.get_xticklabels()[::2], visible=True)
 
@@ -190,18 +222,28 @@ def curves_appendix(save_plot=False):
         ax.plot(days, prediction_q95[county_id], ":",
                     color=C2, alpha=0.5, linewidth=2.0, zorder=1)
 
+
+        # Plot blue line for indicating where predictions start.
+        ax.axvline(dates[-5],ls='-', lw=2, c='cornflowerblue')
+        ax.axvline(dates[-10],ls='--', lw=2, c='cornflowerblue')
+
+
+
     plt.legend([p_real[0], p_pred[0], p_quant, p_quant2],
             ["reported", "predicted",
                 "25\%-75\% quantile", "5\%-95\% quantile"],
             fontsize=16, ncol=5, loc="upper center", bbox_to_anchor=(0, -0.01, 1, 1),
             bbox_transform=plt.gcf().transFigure)
-    fig.text(0.5, 0.02, "Time [days since Jan. 28]", ha='center', fontsize=22)
+    fig.text(0.5, 0.02, "Time [days since Mar. 01]", ha='center', fontsize=22)
     fig.text(0.01, 0.46, "Reported/predicted infections",
             va='center', rotation='vertical', fontsize=22)
-    
+
     if save_plot:
-        plt.savefig("../figures/curves_{}_appendix.pdf".format(disease))
+        plt.savefig("../figures/curves_{}_appendix_{}.pdf".format(disease, model_i))
 
-    return plt
+    #return plt
 
-# plt.show()
+if __name__ == "__main__":
+
+    _ = curves_appendix(15, save_plot=True)
+
