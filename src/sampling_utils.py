@@ -270,10 +270,10 @@ def build_ia_bfs(temporal_bfs, spatial_bfs, profile=False):
 
 
 def iaeffect_sampler(data, times_by_day, locations_by_county, temporal_bfs, spatial_bfs, num_tps=5, time_horizon=5):
-    rnd_time = np.random.Generator(np.random.PCG64(12345))
-    rnd_loc  = np.random.Generator(np.random.PCG64(12345))
-    rnd_time_pred = np.random.Generator(np.random.PCG64(12345))
-    rnd_loc_pred  = np.random.Generator(np.random.PCG64(12345))
+    rnd_time = np.random.Generator(np.random.PCG64())
+    rnd_loc  = np.random.Generator(np.random.PCG64())
+    rnd_time_pred = np.random.Generator(np.random.PCG64())
+    rnd_loc_pred  = np.random.Generator(np.random.PCG64())
 
     # Convert dictonarys to arrays for faster access in sample_time_and_space().
     (times_by_day_np, locations_by_county_np,) = sample_time_and_space__once(times_by_day, locations_by_county)

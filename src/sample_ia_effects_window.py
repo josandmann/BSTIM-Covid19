@@ -52,10 +52,10 @@ print("DaysTest")
 print(data.index)
 # samples random times --> check the data conversion carefully
 # check if correct
-rnd_tsel = np.random.Generator(np.random.PCG64(12345))
+rnd_tsel = np.random.Generator(np.random.PCG64())
 times = uniform_times_by_day(data.index)
 
-rnd_csel = np.random.Generator(np.random.PCG64(12345))
+rnd_csel = np.random.Generator(np.random.PCG64())
 locs = uniform_locations_by_county(counties)
 
 #NOTE: Do we want basis functions with a longer temporal horizon? // we may want to weight them around fixed days?!
