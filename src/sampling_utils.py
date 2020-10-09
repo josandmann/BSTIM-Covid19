@@ -71,7 +71,7 @@ def sample_time_and_space__once(times_by_day, locations_by_county):
             max_coords = max( len(item[1]), max_coords)
             locations_by_county_np = np.empty([len(locations_by_county.keys()), max_coords, 2], dtype='float64')
             for i,item in enumerate(locations_by_county.items()): # counties are sorted because of OrderedDict
-            locations_by_county_np[i][:] = item[1][:]
+                locations_by_county_np[i][:] = item[1][:]
 
             return(times_by_day_np, locations_by_county_np)
 
