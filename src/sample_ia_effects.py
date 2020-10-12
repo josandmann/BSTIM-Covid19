@@ -23,10 +23,10 @@ indata = load_daily_data(disease, prediction_region, counties)
 data = indata
 
 rnd_tsel = np.random.Generator(np.random.PCG64())
-times_by_day = uniform_times_by_day(data.index)
+times_by_day = uniform_times_by_day(data.index, rnd_tsel)
 
 rnd_csel = np.random.Generator(np.random.PCG64())
-locations_by_county=uniform_locations_by_county(counties)
+locations_by_county=uniform_locations_by_county(counties, rnd_csel)
 
 res = iaeffect_sampler(data, times_by_day, locations_by_county, temporal_bfs, spatial_bfs)
 results = {"ia_effects": res, "predicted day": data.index,

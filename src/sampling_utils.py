@@ -27,7 +27,7 @@ def uniform_times_by_week(weeks, n=500):
     return res
 
 
-def uniform_times_by_day(days, n=10):
+def uniform_times_by_day(days, rnd_tsel, n=10):
     """ Samples n random timepoints within a day, per day. converts pd.Timestamps to datetime obj."""
     res = OrderedDict()
     for day in days:
@@ -37,7 +37,7 @@ def uniform_times_by_day(days, n=10):
     return res
 
 
-def uniform_locations_by_county(counties, n=5):
+def uniform_locations_by_county(counties, rnd_csel, n=5):
     res = OrderedDict()
     for (county_id, county) in counties.items():
         tp = county["testpoints"]
