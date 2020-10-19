@@ -8,6 +8,8 @@ import isoweek
 import pickle as pkl
 import datetime
 import time
+import numba
+from numba import njit
 from collections import OrderedDict
 from matplotlib import pyplot as pp
 from geo_utils import jacobian_sq
@@ -146,6 +148,15 @@ def sample_time_and_space__pred(n_days, n_counties, times_by_day_np, locations_b
                     return t_all, x_all
 
 
+#@numba.njit
+def _make_t_all(n_counties, n_total, times_by_day_np, dayoffset, day_of_smpl, rnd_timeid_per_smpl_all):
+    return [ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ]
+
+#@numba.njit
+def _make_x_all(locations_by_county_np, rnd_locid_per_smpl_all, n_total, n_counties, cnty_of_smpl):
+    return [ locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,cnty) in enumerate(cnty_of_smpl)]
+
+
 def sample_time_and_space(n_counties, n_total, dayoffset, times_by_day_np, locations_by_county_np, day_of_smpl, av_times_per_smpl, cnty_of_smpl, av_locs_per_smpl, rnd_time, rnd_loc):
     """
     Calculations samples in time and space.
@@ -157,13 +168,24 @@ def sample_time_and_space(n_counties, n_total, dayoffset, times_by_day_np, locat
 
     # calc random time-id for each sample
     n_all = n_total * n_counties
+    #print("av_times_per_smpl: ", av_times_per_smpl)
+    #print("n_counties", n_counties)
 
     av_times_per_smpl_all = np.tile(av_times_per_smpl, n_counties)
+    print(np.shape(av_times_per_smpl_all))
     rnd_timeid_per_smpl_all = np.floor( av_times_per_smpl_all * rnd_time.random( (n_all,) ) ).astype("int32")
+    #print(np.shape(rnd_timeid_per_smpl_all))
 
     # collect times for each sample with its random time-id
     #t_all = np.empty((n_total,), dtype=object)
-    t_all = [ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ] # [county][day][smpl]
+    #t_all = [ times_by_day[0][rnd_timeid_per_smpl[0]]]
+    #t_all = [ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ] # [county][day][smpl]
+    t_all = _make_t_all(n_counties,
+                        n_total,
+                        times_by_day_np,
+                        dayoffset,
+                        day_of_smpl,
+                        rnd_timeid_per_smpl_all)
 
     ######## x_all ########
 
@@ -174,7 +196,13 @@ def sample_time_and_space(n_counties, n_total, dayoffset, times_by_day_np, locat
     # collect locations for each sample with its random location-id
     #x_all = np.empty((n_total, 2))
     #print("x_all (types, size, value)       : ", type(x_all), np.shape(x_all) )
-    x_all = [ locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,cnty) in enumerate(cnty_of_smpl)] # [county][day][smpl]
+    #x_all = [ locations_by_county_np[0][rnd_locid_per_smpl_all[0]]]
+    #x_all = [ locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,cnty) in enumerate(cnty_of_smpl)] # [county][day][smpl]
+    x_all = _make_x_all(locations_by_county_np,
+                        rnd_locid_per_smpl_all,
+                        n_total,
+                        n_counties, 
+                        cnty_of_smpl)
     if not x_all:
         x_all = np.empty((0, 2)) # ensure array is always 2-dimensional, even then it is empty
 
@@ -318,7 +346,7 @@ def iaeffect_sampler(data, times_by_day, locations_by_county, temporal_bfs, spat
             (n_total, dayoffset, day_of_smpl, av_times_per_smpl, cnty_of_smpl, av_locs_per_smpl,) = sample_time_and_space__prep(times_by_day, locations_by_county, times_by_day_np, locations_by_county_np, subdata, idx)
 
             # Calculate time and space samples for all counties at once
-            (t_data_all, x_data_all,) = sample_time_and_space(n_counties, n_total, dayoffset, times_by_day_np, locations_by_county_np, day_of_smpl, av_times_per_smpl, cnty_of_smpl, av_locs_per_smpl, rnd_time, rnd_loc)
+            t_data_all, x_data_all = sample_time_and_space(n_counties, n_total, dayoffset, times_by_day_np, locations_by_county_np, day_of_smpl, av_times_per_smpl, cnty_of_smpl, av_locs_per_smpl, rnd_time, rnd_loc)
 
             for j, county in enumerate(counties):
 
