@@ -360,10 +360,10 @@ def iaeffect_sampler(data, times_by_day, locations_by_county, temporal_bfs, spat
             print(type(dayoffset))
             print(type(times_by_day_np), np.shape(times_by_day_np))
             print(type(locations_by_county_np), np.shape(locations_by_county_np))
-            print(type(day_of_smpl), np.shape(day_of_smpl))
-            print(type(av_times_per_smpl), np.shape(av_times_per_smpl))
-            print(type(cnty_of_smpl), np.shape(cnty_of_smpl))
-            print(type(av_locs_per_smpl), np.shape(av_locs_per_smpl))
+            print(type(day_of_smpl), np.shape(day_of_smpl)) # TODO:
+            print(type(av_times_per_smpl), np.shape(av_times_per_smpl)) # TODO:
+            print(type(cnty_of_smpl), np.shape(cnty_of_smpl)) # TODO:
+            print(type(av_locs_per_smpl), np.shape(av_locs_per_smpl)) # TODO: 
             print(type(rnd_time))
             print(type(rnd_loc))
             t_data_all, x_data_all = sample_time_and_space(n_counties,
