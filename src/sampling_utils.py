@@ -148,11 +148,11 @@ def sample_time_and_space__pred(n_days, n_counties, times_by_day_np, locations_b
                     return t_all, x_all
 
 
-#@numba.njit
+@numba.njit
 def _make_t_all(n_counties, n_total, times_by_day_np, dayoffset, day_of_smpl, rnd_timeid_per_smpl_all):
     return [ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ]
 
-#@numba.njit
+@numba.njit
 def _make_x_all(locations_by_county_np, rnd_locid_per_smpl_all, n_total, n_counties, cnty_of_smpl):
     return [ locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,cnty) in enumerate(cnty_of_smpl)]
 
@@ -166,13 +166,23 @@ def sample_time_and_space(n_counties, n_total, dayoffset, times_by_day_np, locat
 
     ######## t_all ########
 
+    day_of_smpl = [np.int32(x) for x in range(0)] if (len(day_of_smpl) == 0) else day_of_smpl
+    av_times_per_smpl = [int(x) for x in range(0)] if (len(av_times_per_smpl) == 0) else av_times_per_smpl
+    cnty_of_smpl = [np.int32(x) for x in range(0)] if (len(cnty_of_smpl) == 0) else cnty_of_smpl
+    av_locs_per_smpl = [int(x) for x in range(0)] if (len(av_locs_per_smpl) == 0) else av_locs_per_smpl
+
+
     # calc random time-id for each sample
     n_all = n_total * n_counties
     #print("av_times_per_smpl: ", av_times_per_smpl)
     #print("n_counties", n_counties)
 
     av_times_per_smpl_all = np.tile(av_times_per_smpl, n_counties)
-    print(np.shape(av_times_per_smpl_all))
+    #print(np.shape(av_times_per_smpl_all)) #, print(type(av_times_per_smpl_all)))
+    #if len(av_times_per_smpl_all) != 0:
+    #    print(type(av_times_per_smpl_all[0]), np.shape(av_times_per_smpl_all[0]))
+    #    print(type(np.shape(av_times_per_smpl_all)))
+    av_times_per_smpl_all = np.empty((0,), dtype="int32") if (np.shape(av_times_per_smpl_all) == (0,)) else av_times_per_smpl_all
     rnd_timeid_per_smpl_all = np.floor( av_times_per_smpl_all * rnd_time.random( (n_all,) ) ).astype("int32")
     #print(np.shape(rnd_timeid_per_smpl_all))
 
@@ -180,6 +190,8 @@ def sample_time_and_space(n_counties, n_total, dayoffset, times_by_day_np, locat
     #t_all = np.empty((n_total,), dtype=object)
     #t_all = [ times_by_day[0][rnd_timeid_per_smpl[0]]]
     #t_all = [ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ] # [county][day][smpl]
+    #if len(rnd_timeid_per_smpl_all==0):
+    #    rnd_timeid_per_smpl_all = np.array([np.int32(x) for x in range(0)])
     t_all = _make_t_all(n_counties,
                         n_total,
                         times_by_day_np,
@@ -193,6 +205,10 @@ def sample_time_and_space(n_counties, n_total, dayoffset, times_by_day_np, locat
     av_locs_per_smpl_all = np.tile(av_locs_per_smpl, n_counties)
     rnd_locid_per_smpl_all = np.floor( av_locs_per_smpl_all * rnd_loc.random( (n_all,) ) ).astype("int32")
 
+    if len(rnd_locid_per_smpl_all) != 0:
+        print(np.shape(rnd_locid_per_smpl_all), type(rnd_locid_per_smpl_all), type(rnd_locid_per_smpl_all[0]))
+    rnd_locid_per_smpl_all = np.empty((0,), dtype="int32") if (np.shape(rnd_locid_per_smpl_all)==(0,)) else rnd_locid_per_smpl_all
+
     # collect locations for each sample with its random location-id
     #x_all = np.empty((n_total, 2))
     #print("x_all (types, size, value)       : ", type(x_all), np.shape(x_all) )
@@ -201,7 +217,7 @@ def sample_time_and_space(n_counties, n_total, dayoffset, times_by_day_np, locat
     x_all = _make_x_all(locations_by_county_np,
                         rnd_locid_per_smpl_all,
                         n_total,
-                        n_counties, 
+                        n_counties,
                         cnty_of_smpl)
     if not x_all:
         x_all = np.empty((0, 2)) # ensure array is always 2-dimensional, even then it is empty
