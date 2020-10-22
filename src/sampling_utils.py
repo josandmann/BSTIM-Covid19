@@ -150,41 +150,41 @@ def sample_time_and_space__pred(n_days, n_counties, times_by_day_np, locations_b
                     return t_all, x_all
 
 
-# @numba.jit(nopython=True, parallel=True, cache=False)
-# def sample_time_and_space_tx(n_total, n_counties, dayoffset,
-#                              day_of_smpl, rnd_timeid_per_smpl_all, times_by_day_np,
-#                              cnty_of_smpl, rnd_locid_per_smpl_all, locations_by_county_np):
-#
-#     # https://numba.pydata.org/numba-doc/latest/user/parallel.html#explicit-parallel-loops
-#
-#     #t_all_np = np.array([ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ], dtype=np.float64) # [county][day][smpl]
-#     t_all_np = np.empty(day_of_smpl.size * n_counties, dtype=np.float64)
-#     for j in numba.prange(n_counties):
-#         for (i,day) in enumerate(day_of_smpl):
-#             t_all_np[day_of_smpl.size*j+i] = times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]]
-#
-#     #x_all_np = [ locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,cnty) in enumerate(cnty_of_smpl)] # [county][day][smpl]
-#     x_all_np = np.empty((cnty_of_smpl.size * n_counties, 2), dtype=np.float64)
-#     for j in numba.prange(n_counties):
-#         for (i,cnty) in enumerate(cnty_of_smpl):
-#             x_all_np[cnty_of_smpl.size*j+i] = locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]]
+@numba.jit(nopython=True, parallel=True, cache=False)
+def sample_time_and_space_tx(n_total, n_counties, dayoffset,
+                             day_of_smpl, rnd_timeid_per_smpl_all, times_by_day_np,
+                             cnty_of_smpl, rnd_locid_per_smpl_all, locations_by_county_np):
+
+    # https://numba.pydata.org/numba-doc/latest/user/parallel.html#explicit-parallel-loops
+
+    #t_all_np = np.array([ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ], dtype=np.float64) # [county][day][smpl]
+    t_all_np = np.empty(day_of_smpl.size * n_counties, dtype=np.float64)
+    for j in numba.prange(n_counties):
+        for (i,day) in enumerate(day_of_smpl):
+            t_all_np[day_of_smpl.size*j+i] = times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]]
+
+    #x_all_np = [ locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,cnty) in enumerate(cnty_of_smpl)] # [county][day][smpl]
+    x_all_np = np.empty((cnty_of_smpl.size * n_counties, 2), dtype=np.float64)
+    for j in numba.prange(n_counties):
+        for (i,cnty) in enumerate(cnty_of_smpl):
+            x_all_np[cnty_of_smpl.size*j+i] = locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]]
 #
 #     return t_all_np, x_all_np
 
-@numba.jit(nopython=True, parallel=False, cache=False)
-def _make_t_all(n_counties, n_total, times_by_day_np, dayoffset, day_of_smpl, rnd_timeid_per_smpl_all):
-    t_all = [ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ]
-    return np.array(t_all, dtype=np.float64)
+# @numba.jit(nopython=True, parallel=False, cache=False)
+# def _make_t_all(n_counties, n_total, times_by_day_np, dayoffset, day_of_smpl, rnd_timeid_per_smpl_all):
+#     t_all = [ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ]
+#     return np.array(t_all, dtype=np.float64)
 
 # @numba.njit
 # def _nb_make_t_all(n_counties, n_total, times_by_day_np, dayoffset, day_of_smpl, rnd_timeid_per_smpl_all):
 #     t_all = [ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ]
 #     return t_all
 
-@numba.jit(nopython=True, parallel=False, cache=False)
-def _make_x_all(locations_by_county_np, rnd_locid_per_smpl_all, n_total, n_counties, cnty_of_smpl):
-    x_all = [ locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,cnty) in enumerate(cnty_of_smpl)]
-    return x_all
+# @numba.jit(nopython=True, parallel=False, cache=False)
+# def _make_x_all(locations_by_county_np, rnd_locid_per_smpl_all, n_total, n_counties, cnty_of_smpl):
+#     x_all = [ locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,cnty) in enumerate(cnty_of_smpl)]
+#     return x_all
 
 # @numba.njit
 # def _nb_make_x_all(locations_by_county_np, rnd_locid_per_smpl_all, n_total, n_counties, cnty_of_smpl):
