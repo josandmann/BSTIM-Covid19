@@ -168,8 +168,8 @@ def sample_time_and_space_tx(n_total, n_counties, dayoffset,
     for j in numba.prange(n_counties):
         for (i,cnty) in enumerate(cnty_of_smpl):
             x_all_np[cnty_of_smpl.size*j+i] = locations_by_county_np[cnty][rnd_locid_per_smpl_all[j*n_total+i]]
-#
-#     return t_all_np, x_all_np
+
+    return t_all_np, x_all_np
 
 # @numba.jit(nopython=True, parallel=False, cache=False)
 # def _make_t_all(n_counties, n_total, times_by_day_np, dayoffset, day_of_smpl, rnd_timeid_per_smpl_all):
