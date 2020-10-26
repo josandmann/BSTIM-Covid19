@@ -9,6 +9,7 @@ import pickle as pkl
 import datetime
 import time
 import numba
+import os
 from numba import njit
 from collections import OrderedDict
 from matplotlib import pyplot as pp
@@ -154,9 +155,7 @@ def sample_time_and_space__pred(n_days, n_counties, times_by_day_np, locations_b
 def sample_time_and_space_tx(n_total, n_counties, dayoffset,
                              day_of_smpl, rnd_timeid_per_smpl_all, times_by_day_np,
                              cnty_of_smpl, rnd_locid_per_smpl_all, locations_by_county_np):
-
     # https://numba.pydata.org/numba-doc/latest/user/parallel.html#explicit-parallel-loops
-
     #t_all_np = np.array([ times_by_day_np[day+dayoffset][rnd_timeid_per_smpl_all[j*n_total+i]] for j in range(n_counties) for (i,day) in enumerate(day_of_smpl) ], dtype=np.float64) # [county][day][smpl]
     t_all_np = np.empty(day_of_smpl.size * n_counties, dtype=np.float64)
     for j in numba.prange(n_counties):
@@ -380,6 +379,9 @@ def iaeffect_sampler(data, times_by_day, locations_by_county, temporal_bfs, spat
     rnd_loc  = np.random.Generator(np.random.PCG64())
     rnd_time_pred = np.random.Generator(np.random.PCG64())
     rnd_loc_pred  = np.random.Generator(np.random.PCG64())
+
+    number_of_threads = int(os.environ['OMP_NUM_THREADS'])
+    numba.set_num_threads(number_of_threads)
 
     # Convert dictonarys to arrays for faster access in sample_time_and_space().
     (times_by_day_np, locations_by_county_np,) = sample_time_and_space__once(times_by_day, locations_by_county)
