@@ -356,7 +356,7 @@ class BaseModel(object):
                 expanded_Wtt = tt.tile(
                     W_t_t.reshape(shape=(1, num_counties, -1)), reps=(21, 1, 1)
                 )
-                expanded_TT = np.reshape(T_T, newshape=(21, 412, 2))
+                expanded_TT = np.reshape(T_T, newshape=(21, 412, 2)) # TODO
                 result_TT = tt.flatten(tt.sum(expanded_TT * expanded_Wtt, axis=-1))
 
                 # calculate mean rates
@@ -403,7 +403,7 @@ class BaseModel(object):
                 self.params = [δ, W_t_s, W_t_t, W_t_d, W_ts]
 
                 expanded_Wtt = tt.tile(
-                    W_t_t.reshape(shape=(1, num_counties, -1)), reps=(21, 1, 1)
+                    W_t_t.reshape(shape=(1, num_counties, -1)), reps=(21, 1, 1) # TODO: 21 days hardcoded, letzte 1 ist linearität
                 )
                 expanded_TT = np.reshape(T_T, newshape=(21, 412, 2))
                 result_TT = tt.flatten(tt.sum(expanded_TT * expanded_Wtt, axis=-1))

@@ -33,7 +33,7 @@ def main(
 
     """ Model: """
     use_demographics = True
-    trend_order = 1
+    trend_order = 2 # changed
     periodic_order = 4
     use_report_delay = False
 
