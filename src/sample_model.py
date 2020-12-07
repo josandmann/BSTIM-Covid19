@@ -33,7 +33,7 @@ def main(
 
     """ Model: """
     use_demographics = True
-    trend_order = 2 # changed
+    trend_order = 2 # TODO: changed
     periodic_order = 4
     use_report_delay = False
 
@@ -80,8 +80,8 @@ def main(
         data,
         train_start=start_date,
         # test_start=last_day - pd.Timedelta(days=days_into_future+4),
-        test_start=start_date + pd.Timedelta(days=number_of_weeks * 7),
-        post_test=start_date + pd.Timedelta(days=number_of_weeks * 7 + 10),
+        test_start=start_date + pd.Timedelta(days=number_of_weeks * 7 + 3), # TODO: Changed
+        post_test=start_date + pd.Timedelta(days=number_of_weeks * 7 + 10), # TODO: no change needed
     )
 
     tspan = (target_train.index[0], target_train.index[-1])
