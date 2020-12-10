@@ -242,7 +242,7 @@ class BaseModel(object):
                         "[20-65)"]} if self.include_demographics else {},
             "temporal_report_delay": {
                 "report_delay": ReportDelayPolynomialFeature(
-                    trange[1] - pd.Timedelta(days=5), trange[1], self.report_delay_order)}
+                    trange[1] - pd.Timedelta(days=2), trange[1], self.report_delay_order)} # TODO: nowcast?
             if self.include_report_delay else {},
             "exposure": {
                 "exposure": SpatioTemporalYearlyDemographicsFeature(
@@ -291,7 +291,7 @@ class BaseModel(object):
         num_t_d = T_D.shape[1]
         num_ts = TS.shape[1]
         num_counties = len(counties)
-        
+
 
         if self.include_ia:
 
@@ -303,22 +303,22 @@ class BaseModel(object):
                 # priors
                 # NOTE: Vary parameters over time -> W_ia dependent on time
                 # δ = 1/√α
-                δ = pm.HalfCauchy("δ", 10, testval=1.0)
+                δ = pm.HalfCauchy("δ", 10, testval=1.0) # TODO: 10 -> 7?
                 α = pm.Deterministic("α", np.float32(1.0) / δ)
-                W_ia = pm.Normal("W_ia", mu=0, sd=10, testval=np.zeros(
+                W_ia = pm.Normal("W_ia", mu=0, sd=10, testval=np.zeros( # TODO: 10 -> 7?
                     self.num_ia), shape=self.num_ia)
-                W_t_s = pm.Normal("W_t_s", mu=0, sd=10,
+                W_t_s = pm.Normal("W_t_s", mu=0, sd=10, # TODO: 10 -> 7?
                                   testval=np.zeros(num_t_s), shape=num_t_s)
                 if window:
                     # initialize W_t_t to have dimension (412,2)
-                    W_t_t = pm.Normal("W_t_t", mu=0, sd=10,
+                    W_t_t = pm.Normal("W_t_t", mu=0, sd=10, # TODO: 10 -> 7?
                                       testval=np.zeros((num_counties, num_t_t)), shape=(num_counties, num_t_t))
                 else:
-                    W_t_t = pm.Normal("W_t_t", mu=0, sd=10,
+                    W_t_t = pm.Normal("W_t_t", mu=0, sd=10, # TODO: 10 -> 7?
                                         testval=np.zeros(num_t_t), shape=num_t_t)
-                W_t_d = pm.Normal("W_t_d", mu=0, sd=10,
+                W_t_d = pm.Normal("W_t_d", mu=0, sd=10, # TODO: 10 -> 7?
                                   testval=np.zeros(num_t_d), shape=num_t_d)
-                W_ts = pm.Normal("W_ts", mu=0, sd=10,
+                W_ts = pm.Normal("W_ts", mu=0, sd=10, # TODO: 10 -> 7?
                                  testval=np.zeros(num_ts), shape=num_ts)
                 self.param_names = ["δ", "W_ia",
                                     "W_t_s", "W_t_t", "W_t_d", "W_ts"]
@@ -329,8 +329,8 @@ class BaseModel(object):
 
                 if window:
                     # possibly four weeks instead of three
-                    expanded_Wtt = tt.tile(W_t_t.reshape(shape=(1,num_counties,-1)), reps=(21, 1, 1))
-                    expanded_TT = np.reshape(T_T, newshape=(21,412,2))
+                    expanded_Wtt = tt.tile(W_t_t.reshape(shape=(1,num_counties,-1)), reps=(24, 1, 1)) # TODO: changed
+                    expanded_TT = np.reshape(T_T, newshape=(24,412,2)) # TODO: changed, 
                     result_TT = tt.flatten(tt.sum(expanded_TT*expanded_Wtt,axis=-1))
                 else:
                     result_TT = tt.dot(T_T, W_t_t)
@@ -341,7 +341,7 @@ class BaseModel(object):
                     tt.exp(
                         IA_ef +
                         tt.dot(T_S, W_t_s) +
-                        result_TT + 
+                        result_TT +
                         tt.dot(T_D, W_t_d) +
                         tt.dot(TS, W_ts)+
                         log_exposure
@@ -459,24 +459,24 @@ class BaseModel(object):
         TS = features["spatiotemporal"].values
         log_exposure = np.log(features["exposure"].values.ravel())
 
-        
+
         if average_periodic_feature:
             T_S = np.reshape(T_S, newshape=(-1,412,5))
             mean = np.mean(T_S, axis=0, keepdims=True)
-            T_S = np.reshape(np.tile(mean, reps=(T_S.shape[0],1,1)), (-1,5))          
-        
+            T_S = np.reshape(np.tile(mean, reps=(T_S.shape[0],1,1)), (-1,5))
+
         if average_all:
             T_S = np.reshape(T_S, newshape=(31,412,-1))
             mean = np.mean(T_S, axis=0, keepdims=True)
-            T_S = np.reshape(np.tile(mean, reps=(31,1,1)), (-1,5))          
- 
+            T_S = np.reshape(np.tile(mean, reps=(31,1,1)), (-1,5))
+
             TS = np.reshape(TS, newshape=(31,412,-1))
             mean = np.mean(TS, axis=0, keepdims=True)
-            TS = np.reshape(np.tile(mean, reps=(31,1,1)),(-1,3)) 
+            TS = np.reshape(np.tile(mean, reps=(31,1,1)),(-1,3))
 
             T_D = np.reshape(T_D, newshape=(31,412,-1))
             mean = np.mean(T_D, axis=0, keepdims=True)
-            T_D = np.reshape(np.tile(mean, reps=(31,1,1)), (-1)) 
+            T_D = np.reshape(np.tile(mean, reps=(31,1,1)), (-1))
 
             log_exposure = np.reshape(log_exposure, newshape=(31,412))
             mean = np.mean(log_exposure, axis=0, keepdims=True)
@@ -506,7 +506,7 @@ class BaseModel(object):
         # for i in range(num_parameter_samples):
         #     mean_delay += np.dot(T_D, W_t_d[i])
 
-     
+
         if window:
             # possibly four weeks instead of three
             expanded_Wtt = np.tile(np.reshape(W_t_t, newshape=(-1,1,412,2)), reps=(1,31, 1, 1))
@@ -514,7 +514,7 @@ class BaseModel(object):
             result_TT = np.reshape(np.sum(expanded_TT*expanded_Wtt,axis=-1), newshape=(-1,31*412))
         else:
             result_TT = tt.dot(T_T, W_t_t)
-      
+
        # NOTE: the delay polynomial is left out here!
         # mean_delay /= num_parameter_samples
         if self.include_ia:
@@ -525,10 +525,10 @@ class BaseModel(object):
                 if average_all:
                     IA_ef = np.reshape(IA_ef, newshape=(31,412))
                     mean = np.mean(IA_ef, axis=0, keepdims=True)
-                    IA_ef = np.reshape(np.tile(mean, reps=(31,1)), (-1)) 
+                    IA_ef = np.reshape(np.tile(mean, reps=(31,1)), (-1))
                 μ[i, :] = np.exp(IA_ef +
                             np.dot(T_S, W_t_s[i]) +
-                            result_TT[i] + 
+                            result_TT[i] +
                             np.dot(TS, W_ts[i]) +
                             log_exposure)
                 y[i, :] = pm.NegativeBinomial.dist(
