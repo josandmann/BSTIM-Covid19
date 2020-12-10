@@ -33,7 +33,11 @@ def main(
 
     """ Model: """
     use_demographics = True
+<<<<<<< HEAD
     trend_order = 2 # TODO: quadratisch 
+=======
+    trend_order = 2 # TODO: changed
+>>>>>>> 41fadecd56b5bfde1b6b3abf3e25634178134d72
     periodic_order = 4
     use_report_delay = False
 
@@ -72,7 +76,11 @@ def main(
         county_info = pkl.load(f)
 
     # Prediciton is 5 days into the future
+<<<<<<< HEAD
     days_into_future = 5 #Forecast
+=======
+    days_into_future = 5
+>>>>>>> 41fadecd56b5bfde1b6b3abf3e25634178134d72
     data = load_data_n_weeks(start, number_of_weeks, csv_path, pad=days_into_future)
 
     # For the simple model, only targets are required!
@@ -84,7 +92,11 @@ def main(
         post_test=start_date + pd.Timedelta(days=number_of_weeks * 7 + 10), # TODO: no change needed
     )
 
+<<<<<<< HEAD
     tspan = (target_train.index[0], target_train.index[-1]) #dates
+=======
+    tspan = (target_train.index[0], target_train.index[-1])
+>>>>>>> 41fadecd56b5bfde1b6b3abf3e25634178134d72
     print("CHECK")
     print(start)
     print(start_date)
