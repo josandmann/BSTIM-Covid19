@@ -4,7 +4,10 @@ tags
 # data directory
 data/
 csv/
+<<<<<<< HEAD
 figures/
+=======
+>>>>>>> csvmod
 
 # log files
 logs/
