@@ -60,9 +60,9 @@ def plotdata_csv(start, n_weeks, csv_path, counties, output_dir):
     countyByName = make_county_dict()
     data = load_data_n_weeks(start, n_weeks, csv_path)
     start_day = pd.Timestamp("2020-01-28") + pd.Timedelta(days=start)
-    day_0 = start_day + pd.Timedelta(days=n_weeks * 7 + 5)
-    day_m5 = day_0 - pd.Timedelta(days=5)
-    day_p5 = day_0 + pd.Timedelta(days=5)
+    day_0 = start_day + pd.Timedelta(days=n_weeks * 7 + 5) # today
+    day_m5 = day_0 - pd.Timedelta(days=2) # TODO: reduced from 5 - first day of nowcast
+    day_p5 = day_0 + pd.Timedelta(days=5) # last day of forecast
     _, target, _, _ = split_data(
         data, train_start=start_day, test_start=day_0, post_test=day_p5
     )

@@ -33,7 +33,7 @@ def main(
 
     """ Model: """
     use_demographics = True
-    trend_order = 1
+    trend_order = 1 # TODO: 2 for quadratic
     periodic_order = 4
     use_report_delay = False
 
@@ -80,7 +80,7 @@ def main(
         data,
         train_start=start_date,
         # test_start=last_day - pd.Timedelta(days=days_into_future+4),
-        test_start=start_date + pd.Timedelta(days=number_of_weeks * 7),
+        test_start=start_date + pd.Timedelta(days=number_of_weeks * 7 + 3), # TODO: changed
         post_test=start_date + pd.Timedelta(days=number_of_weeks * 7 + 10),
     )
 
